@@ -25,6 +25,7 @@ async fn main() {
     let shooting_sound = load_sound("res/audio/shooting.wav").await.unwrap();
     let asteroid_damage_sound = load_sound("res/audio/asteroid_damage.wav").await.unwrap();
     let asteroid_destroy_sound = load_sound("res/audio/asteroid_destroy.wav").await.unwrap();
+    let damaged_sound = load_sound("res/audio/player_damaged.wav").await.unwrap();
 
     let mut player = player::Player {
         pos: math::Vec2::new(screen_width() / 2.0, screen_height() / 2.0),
@@ -33,6 +34,10 @@ async fn main() {
         angle: 0.0,
         speed: 10.0,
         shoot_sound: shooting_sound,
+        invincibility_frames: 60,
+        cur_inv_frames: 0,
+        damaged_sound,
+        health: 3,
 
         bullet_speed: 15.0,
         bullet_color: Color::new(0.0, 0.8, 0.0, 1.0),
@@ -67,8 +72,12 @@ async fn main() {
         //(NOTE): check player collission with asteroids
         for asteroid in asteroids.iter(){
             if utils::check_collission_asteroid_player(&player, &asteroid){
-                println!("we hit an asteroid!");
+                player.damage_player();
             }
+        }
+        if player.is_dead(){
+            println!("game over");
+            break;
         }
 
         player.render();
@@ -102,6 +111,7 @@ async fn main() {
         for i in bullet_oob_index.iter(){
             if *i == bullets.len(){
                 println!("bugggg");
+                break;
             }
 
             let last_index = bullets.len() - 1;

@@ -13,6 +13,10 @@ pub struct Player {
     pub angle: f32,
     pub speed: f32,
     pub shoot_sound: Sound,
+    pub invincibility_frames: u8,
+    pub cur_inv_frames: u8,
+    pub damaged_sound: Sound,
+    pub health: u8,
     
     //the values are in player cuz I want to have every
     //single customazible variable in main
@@ -34,6 +38,14 @@ impl Player {
     }
 
     pub fn update(&mut self) -> Option<bullet::Bullet>{
+        if self.cur_inv_frames > 0{
+            self.cur_inv_frames += 1;
+            if self.cur_inv_frames >= self.invincibility_frames{
+                self.cur_inv_frames = 0;
+                self.color = Color::new(self.color.r, self.color.g, self.color.b, 1.0);
+            }
+        }
+        
         //(NOTE): movement
         if is_key_down(KeyCode::J){
             self.angle -= ANGLE_INCREMENT;
@@ -47,18 +59,6 @@ impl Player {
                 self.angle -= 360.0;
             }
         }
-        /*
-        if is_key_down(KeyCode::W){
-            let rotated_vec = math::rotate_vec(&math::Vec2::new(0.0, 1.0), self.angle);
-            let new_pos = math::vec_add(&self.pos, &math::vec_mul_num(&rotated_vec, self.speed));
-            self.pos = new_pos;
-        }
-        if is_key_down(KeyCode::S){
-            let rotated_vec = math::rotate_vec(&math::Vec2::new(0.0, 1.0), self.angle);
-            let new_pos = math::vec_sub(&self.pos, &math::vec_mul_num(&rotated_vec, self.speed));
-            self.pos = new_pos;
-        }
-        */    
         if is_key_down(KeyCode::W){
             self.pos = math::Vec2::new(self.pos.x, self.pos.y - self.speed);
         }
@@ -88,5 +88,18 @@ impl Player {
             });
         }
         None
+    }
+    
+    pub fn damage_player(&mut self){
+        if self.cur_inv_frames == 0{
+            play_sound_once(&self.damaged_sound);
+            self.color = Color::new(self.color.r, self.color.g, self.color.b, 0.2);
+            self.cur_inv_frames += 1;
+            self.health -= 1;
+        }
+    }
+    
+    pub fn is_dead(&self) -> bool{
+        self.health <= 0
     }
 }

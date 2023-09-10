@@ -22,6 +22,12 @@ pub struct Asteroid<'a>{
 const ASTEROID_COLOR: Color = Color::new(0.2, 0.2, 0.2, 1.0);
 const ANIMATION_FRAME_COUNT: u8 = 5;
 
+impl<'a> Drop for Asteroid<'a> {
+    fn drop(&mut self) {
+        audio::play_sound_once(self.destroy_sound)        
+    }
+}
+
 impl<'a> Asteroid<'a>{
     pub fn new(damage_sound: &'a audio::Sound, destroy_sound: &'a audio::Sound) -> Self{
         let mut rng = thread_rng();
