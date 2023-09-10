@@ -100,4 +100,13 @@ impl<'a> Asteroid<'a> {
         self.color = Color::new(1.0, 0.46, 0.37, 1.0);
         audio::play_sound_once(self.damage_sound)
     }
+
+    pub fn is_outside_window(&self) -> bool {
+        let width = crate::WINDOW_WIDTH as f32;
+        let height = crate::WINDOW_HEIGHT as f32;
+        if self.pos.x < 0.0 || self.pos.x > width || self.pos.y < 0.0 || self.pos.y > height {
+            return true;
+        }
+        false
+    }
 }

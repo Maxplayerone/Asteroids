@@ -30,6 +30,8 @@ async fn main() {
     let damaged_sound = load_sound("res/audio/player_damaged.wav").await.unwrap();
 
     let heart: Texture2D = load_texture("res/images/heart.png").await.unwrap();
+    //let space: Texture2D = load_texture("res/images/space.png").await.unwrap();
+    //let space2: Texture2D = load_texture("res/images/space2.png").await.unwrap();
 
     let mut player = player::Player {
         pos: math::Vec2::new(screen_width() / 2.0, screen_height() / 2.0),
@@ -50,7 +52,7 @@ async fn main() {
 
     let mut bullets = Vec::new();
 
-    let mut asteroids = Vec::new();
+    let mut asteroids: Vec<asteroid::Asteroid> = Vec::new();
 
     let mut ui_obj = ui::UiObject {
         score: 0,
@@ -58,31 +60,97 @@ async fn main() {
         heart,
     };
 
+    let mut frames_btw_waves = 60.0;
+    let mut cur_frame = 0.0;
+
     loop {
-        clear_background(GRAY);
+        clear_background(BLACK);
+        /*
+        draw_texture_ex(
+            &space,
+            0.0,
+            0.0,
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(vec2(screen_width(), screen_height())),
+                ..Default::default()
+            },
+        );
+        */
+        draw_text(
+            "ASTEROIDS",
+            crate::WINDOW_WIDTH as f32 / 2.0 - 120.0,
+            60.0,
+            80.0,
+            WHITE,
+        );
+        draw_text(
+            "PLAY (click enter)",
+            crate::WINDOW_WIDTH as f32 / 2.0 - 120.0,
+            300.0,
+            40.0,
+            WHITE,
+        );
+        draw_text(
+            "QUIT (click escape)",
+            crate::WINDOW_WIDTH as f32 / 2.0 - 120.0,
+            400.0,
+            40.0,
+            WHITE,
+        );
+
+        if is_key_down(KeyCode::Enter){
+            break;
+        }
+        if is_key_down(KeyCode::Escape){
+            break;
+        }
+
+        next_frame().await
+    }
+
+    loop {
+        clear_background(Color::new(0.1, 0.1, 0.1, 1.0));
+        /*
+        draw_texture_ex(
+            &space2,
+            0.0,
+            0.0,
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(vec2(screen_width(), screen_height())),
+                ..Default::default()
+            },
+        );
+        */
 
         let mut score = 0;
 
-        if is_key_pressed(KeyCode::I) && asteroids.len() < MAX_ASTEROIDS_COUNT {
+        cur_frame += 1.0;
+        if cur_frame >= frames_btw_waves && asteroids.len() < MAX_ASTEROIDS_COUNT {
             asteroids.push(asteroid::Asteroid::new(
                 &asteroid_damage_sound,
                 &asteroid_destroy_sound,
             ));
+            frames_btw_waves = frames_btw_waves * 0.99;
+            cur_frame = 0.0;
         }
-
-        for asteroid in asteroids.iter_mut() {
-            asteroid.reset_color();
-            asteroid.update();
-            asteroid.render();
+        if let Some(bullet) = player.update() {
+            if bullets.len() < 10 {
+                bullets.push(bullet);
+            }
         }
 
         let mut bullet_oob_index = Vec::new(); //bullet out of bounds index
         let mut destroyed_asteroids = Vec::new();
 
-        if let Some(bullet) = player.update() {
-            if bullets.len() < 10 {
-                bullets.push(bullet);
+        for (i, asteroid) in asteroids.iter_mut().enumerate() {
+            asteroid.reset_color();
+            asteroid.update();
+            if asteroid.is_outside_window() {
+                destroyed_asteroids.push(i);
             }
+            asteroid.render();
         }
 
         //(NOTE): check player collission with asteroids
@@ -106,7 +174,6 @@ async fn main() {
                 bullet_oob_index.push(i);
             }
         }
-
         //(NOTE): checking bullet collission with asteroids
         for (j, bullet) in bullets.iter().enumerate() {
             for (i, asteroid) in asteroids.iter_mut().enumerate() {
@@ -129,6 +196,7 @@ async fn main() {
             }
 
             let last_index = bullets.len() - 1;
+            //println!("laste indexx {}", last_index);
             bullets.swap(last_index, *i);
             bullets.pop();
         }
@@ -139,6 +207,7 @@ async fn main() {
                 break;
             }
             let last_index = asteroids.len() - 1;
+            //println!("lasjdkdlk indedx {}", last_index);
             asteroids.swap(last_index, *i);
             asteroids.pop();
             score += SCORE_FOR_ASTEROID;
